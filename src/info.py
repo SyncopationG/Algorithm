@@ -230,8 +230,8 @@ class Info(GanttChart):
             a, b = b, a
         r_a_b = range(a, b)
         r_left = np.delete(range(self.problem.n), r_a_b)
-        left_1, left_2 = code2[r_left], code1[r_left]
-        middle_1, middle_2 = code2[r_a_b], code1[r_a_b]
+        middle_1, middle_2 = code1[r_a_b], code2[r_a_b]
+        left_1, left_2 = code1[r_left], code2[r_left]
         code1[r_a_b], code2[r_a_b] = middle_2, middle_1
         mapping = [[], []]
         for i, j in zip(middle_1, middle_2):
@@ -246,9 +246,7 @@ class Info(GanttChart):
                         break
                 mapping[0].append(i)
                 mapping[1].append(value)
-            elif i in middle_2:
-                pass
-            else:
+            elif j not in middle_1 and i not in middle_2:
                 mapping[0].append(i)
                 mapping[1].append(j)
         for i, j in zip(mapping[0], mapping[1]):
