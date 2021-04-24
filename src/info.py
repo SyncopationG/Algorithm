@@ -30,14 +30,16 @@ class GanttChart:
         self.wok = wok
 
     def ganttChart_png(self, filename="GanttChart", fig_width=9, fig_height=5, lang=0,
-                       random_colors=True, with_operation=True, with_start_end=True,
-                       height=0.8, scale_more=12, text_rotation=1, x_step=50, dpi=200, show=False, ):
+                       random_colors=False, with_operation=True, with_start_end=False,
+                       height=0.8, scale_more=None, text_rotation=1, x_step=None, dpi=200, show=False, ):
         if random_colors:
             random.shuffle(COLORS)
         plt.figure(figsize=[fig_width, fig_height])
         plt.yticks(range(self.problem.m), range(1, self.problem.m + 1))
         plt.xticks([], [])
         ax = plt.gca()
+        scale_more = 12 if scale_more is None else scale_more
+        x_step = int(self.problem.makespan // 10) if x_step is None else x_step
         for job in self.problem.job.values():
             for task in job.task.values():
                 if self.mac is None:
@@ -91,15 +93,18 @@ class GanttChart:
             ymin = -0.5
             ymax = self.problem.m + ymin
             plt.vlines(self.problem.makespan, ymin, ymax, colors="red", linestyles="--")
-            x_ticks = range(0, self.problem.makespan, x_step)
+            plt.text(self.problem.makespan, ymin, "{}".format(int(self.problem.makespan / self.problem.time_unit)))
+            x_ticks = range(0, self.problem.makespan + x_step, x_step)
             plt.xticks(x_ticks, x_ticks)
             [ax.spines[name].set_color('none') for name in ["top", "right"]]
         else:
             [ax.spines[name].set_color('none') for name in ["top", "right", "bottom", "left"]]
         if lang == 0:
             plt.ylabel(r"${Machine}$")
+            plt.xlabel(r"${Time}$")
         else:
             plt.ylabel("机器")
+            plt.xlabel("时间")
         if self.wok is not None:
             for worker in self.problem.worker.values():
                 plt.barh(0, 0, color=COLORS[(worker.index + 1) % LEN_COLORS], label=worker.index + 1)
@@ -111,6 +116,7 @@ class GanttChart:
             plt.legend(loc="best", title=title)
         plt.margins()
         plt.tight_layout()
+        plt.gcf().subplots_adjust(left=0.08, bottom=0.12)
         plt.savefig("{}.png".format(filename), dpi=dpi)
         if show:
             plt.show()
@@ -331,9 +337,19 @@ class Info(GanttChart):
             code = code[::-1]
         return code
 
+    def ga_mutation_reverse(self, n_time=None):
+        code = deepcopy(self.code)
+        for n_do in range(Utils.n_time(n_time)):
+            a, b = np.random.choice(range(self.problem.n), 2, replace=False)
+            if a > b:
+                a, b = b, a
+            c = range(a, b + 1)
+            code[c] = code[c[::-1]]
+        return code
+
     def ga_mutation_hybrid(self, func_list=None):
         if func_list is None:
-            func_list = [self.ga_mutation_tpe, self.ga_mutation_insert]
+            func_list = [self.ga_mutation_tpe, self.ga_mutation_insert, self.ga_mutation_reverse]
         func = np.random.choice(func_list, 1, replace=False)[0]
         return func()
 
