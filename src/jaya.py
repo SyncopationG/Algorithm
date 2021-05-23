@@ -97,47 +97,8 @@ class JayaNumericOptimization(Jaya):
         self.show_generation(0)
 
     def do_update_individual(self, i):
-        j = np.random.choice(np.delete(range(self.pop_size), 1), 1, replace=False)[0]
-        code = self.pop[0][i].jaya_hybrid(self.best[0], self.worst[0], self.pop[0][j])
+        code = self.pop[0][i].jaya_classic(self.best[0], self.worst[0])
         info = self.problem.decode(self.func, code)
-        if Utils.update(self.max_or_min, self.pop[1][i], info.obj):
-            self.pop[0][i] = info
-            self.pop[1][i] = info.obj
-        self.update_best(info)
-
-
-class JayaShopSchedule(JayaNumericOptimization):
-    def __init__(self, pop_size, max_generation, problem, func, max_or_min=0):
-        JayaNumericOptimization.__init__(self, pop_size, max_generation, problem, func, max_or_min)
-
-    def reach_best_known_solution(self):
-        if self.problem.best_known is not None and self.best[1] <= self.problem.best_known:
-            return True
-        return False
-
-
-class JayaShopScheduleWorker(JayaShopSchedule):
-    def __init__(self, pop_size, max_generation, problem, func, max_or_min=0):
-        JayaShopSchedule.__init__(self, pop_size, max_generation, problem, func, max_or_min)
-
-    def do_init(self, pop=None):
-        self.record[0].append(time.perf_counter())
-        for i in range(self.pop_size):
-            if pop is None:
-                code = self.problem.code(self.problem.low, self.problem.high, self.problem.dtype)
-            else:
-                code = pop[0][i].code
-            info = self.problem.decode_worker(self.func, code)
-            self.pop[0].append(info)
-            self.pop[1].append(info.obj)
-        self.init_best()
-        self.record[1].append(time.perf_counter())
-        self.show_generation(0)
-
-    def do_update_individual(self, i):
-        j = np.random.choice(np.delete(range(self.pop_size), 1), 1, replace=False)[0]
-        code = self.pop[0][i].jaya_hybrid(self.best[0], self.worst[0], self.pop[0][j])
-        info = self.problem.decode_worker(self.func, code)
         if Utils.update(self.max_or_min, self.pop[1][i], info.obj):
             self.pop[0][i] = info
             self.pop[1][i] = info.obj

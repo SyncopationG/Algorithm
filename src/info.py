@@ -1,132 +1,13 @@
 import copy
-import datetime
-import random
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import colors as mcolors
-
-from .utils import Utils
 
 deepcopy = copy.deepcopy
-dt = datetime.datetime
-tmdelta = datetime.timedelta
-COLORS = list(mcolors.CSS4_COLORS)
-COLORS_REMOVE = ['black', "white"]
-COLORS_REMOVE.extend([i for i in COLORS if i.startswith('dark')])
-COLORS_REMOVE.extend([i for i in COLORS if i.startswith('light')])
-[COLORS.remove(i) for i in COLORS_REMOVE]
-[COLORS.pop(j - i) for i, j in enumerate(range(11))]
-[COLORS.pop(j - i) for i, j in enumerate([6, ])]
-LEN_COLORS = len(COLORS)
-plt.rcParams['font.sans-serif'] = ['SimHei']
-plt.rcParams['axes.unicode_minus'] = False
 
 
-class GanttChart:
-    def __init__(self, problem=None, mac=None, wok=None):
+class Info:
+    def __init__(self, problem, code, obj):
         self.problem = deepcopy(problem)
-        self.mac = mac
-        self.wok = wok
-
-    def ganttChart_png(self, filename="GanttChart", fig_width=9, fig_height=5, lang=0,
-                       random_colors=False, with_operation=True, with_start_end=False,
-                       height=0.8, scale_more=None, text_rotation=1, x_step=None, dpi=200, show=False, ):
-        if random_colors:
-            random.shuffle(COLORS)
-        plt.figure(figsize=[fig_width, fig_height])
-        plt.yticks(range(self.problem.m), range(1, self.problem.m + 1))
-        plt.xticks([], [])
-        ax = plt.gca()
-        scale_more = 12 if scale_more is None else scale_more
-        x_step = int(self.problem.makespan // 10) if x_step is None else x_step
-        for job in self.problem.job.values():
-            for task in job.task.values():
-                if self.mac is None:
-                    machine = task.machine
-                else:
-                    machine = self.mac[job.index][task.index]
-                if self.wok is None:
-                    index_color = job.index
-                else:
-                    index_color = self.wok[job.index][task.index]
-                width = task.end - task.start
-                left = [task.start, self.problem.makespan - task.end][self.problem.direction]
-                plt.barh(
-                    y=machine, width=width,
-                    left=left, color=COLORS[(index_color + 1) % LEN_COLORS],
-                    edgecolor="black", linewidth=0.5,
-                )
-                if with_operation:
-                    mark = r"$O_{%s,%s}$" % (job.index + 1, task.index + 1)
-                    plt.text(
-                        x=left + 0.5 * width, y=machine,
-                        s=mark, c="black",
-                        ha="center", va="center", rotation="vertical",
-                    )
-                if with_start_end:
-                    if self.problem.direction == 0:
-                        val = [task.start, task.end]
-                    else:
-                        val = [self.problem.makespan - task.end, self.problem.makespan - task.start]
-                    for x in val:
-                        s = r"$_{%s}$" % int(x)
-                        rotation = text_rotation
-                        if text_rotation in [0, 1]:
-                            rotation = ["horizontal", "vertical"][text_rotation]
-                        plt.text(
-                            x=x, y=machine - height * 0.5,
-                            s=s, c="black",
-                            ha="center", va="top",
-                            rotation=rotation,
-                        )
-        if not with_operation and self.wok is None:
-            for job in self.problem.job.values():
-                plt.barh(0, 0, color=COLORS[(job.index + 1) % LEN_COLORS], label=job.index + 1)
-            plt.barh(y=0, width=self.problem.makespan / scale_more, left=self.problem.makespan, color="white")
-            if lang == 0:
-                title = r"${Job}$"
-            else:
-                title = "工件"
-            plt.legend(loc="best", title=title)
-        if not with_start_end:
-            ymin = -0.5
-            ymax = self.problem.m + ymin
-            plt.vlines(self.problem.makespan, ymin, ymax, colors="red", linestyles="--")
-            plt.text(self.problem.makespan, ymin, "{}".format(int(self.problem.makespan / self.problem.time_unit)))
-            x_ticks = range(0, self.problem.makespan + x_step, x_step)
-            plt.xticks(x_ticks, x_ticks)
-            [ax.spines[name].set_color('none') for name in ["top", "right"]]
-        else:
-            [ax.spines[name].set_color('none') for name in ["top", "right", "bottom", "left"]]
-        if lang == 0:
-            plt.ylabel(r"${Machine}$")
-            plt.xlabel(r"${Time}$")
-        else:
-            plt.ylabel("机器")
-            plt.xlabel("时间")
-        if self.wok is not None:
-            for worker in self.problem.worker.values():
-                plt.barh(0, 0, color=COLORS[(worker.index + 1) % LEN_COLORS], label=worker.index + 1)
-            plt.barh(y=0, width=self.problem.makespan / scale_more, left=self.problem.makespan, color="white")
-            if lang == 0:
-                title = r"${Worker}$"
-            else:
-                title = "工人"
-            plt.legend(loc="best", title=title)
-        plt.margins()
-        plt.tight_layout()
-        plt.gcf().subplots_adjust(left=0.08, bottom=0.12)
-        plt.savefig("{}.png".format(filename), dpi=dpi)
-        if show:
-            plt.show()
-        plt.clf()
-        Utils.print("Create {}.png".format(filename), fore=Utils.fore().LIGHTCYAN_EX)
-
-
-class Info(GanttChart):
-    def __init__(self, problem, code, obj, mac=None, wok=None):
-        GanttChart.__init__(self, problem, mac, wok)
         self.code = code
         self.obj = obj
 
@@ -138,6 +19,26 @@ class Info(GanttChart):
                 code[i] = self.problem.high[i]
             code[i] = k(code[i])
         return code
+
+    def de_mutation(self, f, info2, info3, info4, info5, info_best):
+        a = np.random.random()
+        if a < 0.2:
+            return self.de_mutation_sequence_rand1(f, info2, info3)
+        elif a < 0.4:
+            return self.de_mutation_sequence_best1(f, info2, info_best)
+        elif a < 0.6:
+            return self.de_mutation_sequence_c2best1(f, info2, info_best)
+        elif a < 0.8:
+            return self.de_mutation_sequence_best2(f, info2, info3, info4, info_best)
+        return self.de_mutation_sequence_rand2(f, info2, info3, info4, info5)
+
+    def de_crossover(self, cr, info2):
+        code1 = deepcopy(self.code)
+        code2 = deepcopy(info2.code)
+        for i, (j, k) in enumerate(zip(code1, code2)):
+            if np.random.random() < cr:
+                code1[i], code2[i] = k, j
+        return code1, code2
 
     def de_mutation_sequence_rand1(self, f, info2, info3):
         code1 = self.code
@@ -178,25 +79,8 @@ class Info(GanttChart):
         new = code1 + f * (code2 - code3) + f * (code4 - code5)
         return self.repair(new)
 
-    def de_mutation_sequence_hybrid(self, f, info2, info3, info4, info5, info_best):
-        a = np.random.random()
-        if a < 0.2:
-            return self.de_mutation_sequence_rand1(f, info2, info3)
-        elif a < 0.4:
-            return self.de_mutation_sequence_best1(f, info2, info_best)
-        elif a < 0.6:
-            return self.de_mutation_sequence_c2best1(f, info2, info_best)
-        elif a < 0.8:
-            return self.de_mutation_sequence_best2(f, info2, info3, info4, info_best)
-        return self.de_mutation_sequence_rand2(f, info2, info3, info4, info5)
-
-    def de_crossover_sequence_normal(self, cr, info2):
-        code1 = deepcopy(self.code)
-        code2 = deepcopy(info2.code)
-        for i, (j, k) in enumerate(zip(code1, code2)):
-            if np.random.random() < cr:
-                code1[i], code2[i] = k, j
-        return code1, code2
+    def jaya_update(self):
+        pass
 
     def jaya_classic(self, best, worst):
         a, b = np.random.random(2)
@@ -210,8 +94,8 @@ class Info(GanttChart):
         new = self.code + a * (best.code - code) - b * (worst.code - code) + c * (rand.code - code)
         return self.repair(new)
 
-    def jaya_hybrid(self, best, worst, rand):
-        return self.jaya_classic(best, worst) if np.random.random() < 0.5 else self.jaya_rand(best, worst, rand)
+    def pso_update(self):
+        pass
 
     def pso_classic(self, c1, c2, w, p_best, g_best):
         a, b = np.random.random(2)
@@ -219,14 +103,20 @@ class Info(GanttChart):
         d = self.code[1] + c
         return self.repair(c), self.repair(d)
 
+    def sa_update(self):
+        pass
+
     def sa_classic(self, t):
         a = -self.problem.var_range + 2 * self.problem.var_range * np.random.random(self.problem.n_dim)
         b = a / np.sqrt(sum([i ** 2 for i in a]))
         new = self.code + b * t
         return self.repair(new)
 
-    def similarity(self, info):
-        return 1 - np.count_nonzero(self.code - info.code)
+    def ga_crossover(self):
+        pass
+
+    def ga_mutation(self):
+        pass
 
     def ga_crossover_pmx(self, info):
         code1 = deepcopy(self.code)
@@ -310,48 +200,30 @@ class Info(GanttChart):
             res2 = np.append(res2, b)
         return res1, res2
 
-    def ga_crossover_hybrid(self, info, func_list=None):
-        if func_list is None:
-            func_list = [self.ga_crossover_pmx, self.ga_crossover_ox]
-        func = np.random.choice(func_list, 1, replace=False)[0]
-        return func(info)
-
-    def ga_mutation_tpe(self, n_time=None):
+    def ga_mutation_tpe(self):
         code = deepcopy(self.code)
-        for n_do in range(Utils.n_time(n_time)):
-            a = np.random.choice(range(self.problem.n), 2, replace=False)
-            code[a] = code[a[::-1]]
+        a = np.random.choice(range(self.problem.n), 2, replace=False)
+        code[a] = code[a[::-1]]
         return code
 
-    def ga_mutation_insert(self, n_time=None):
+    def ga_mutation_insert(self):
         code = deepcopy(self.code)
         try:
-            for n_do in range(Utils.n_time(n_time)):
-                b, c = np.random.choice(range(self.problem.n), 2, replace=False)
-                if b > c:
-                    b, c = c, b
-                val = code[c]
-                obj = np.delete(code, c)
-                code = np.insert(obj, b, val)
+            b, c = np.random.choice(range(self.problem.n), 2, replace=False)
+            if b > c:
+                b, c = c, b
+            val = code[c]
+            obj = np.delete(code, c)
+            code = np.insert(obj, b, val)
         except ValueError:
             code = code[::-1]
         return code
 
-    def ga_mutation_reverse(self, n_time=None):
+    def ga_mutation_sr(self):
         code = deepcopy(self.code)
-        for n_do in range(Utils.n_time(n_time)):
-            a, b = np.random.choice(range(self.problem.n), 2, replace=False)
-            if a > b:
-                a, b = b, a
-            c = range(a, b + 1)
-            code[c] = code[c[::-1]]
+        a, b = np.random.choice(range(self.problem.n), 2, replace=False)
+        if a > b:
+            a, b = b, a
+        c = range(a, b + 1)
+        code[c] = code[c[::-1]]
         return code
-
-    def ga_mutation_hybrid(self, func_list=None):
-        if func_list is None:
-            func_list = [self.ga_mutation_tpe, self.ga_mutation_insert, self.ga_mutation_reverse]
-        func = np.random.choice(func_list, 1, replace=False)[0]
-        return func()
-
-    def dislocation_operator(self):
-        return np.hstack([self.code[1:], self.code[0]])

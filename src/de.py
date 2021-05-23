@@ -54,9 +54,6 @@ class De:
         Utils.print("Generation: {:>4}, runtime: {:.4f}, objective: {:>.4f}".format(
             g, self.record[1][g] - self.record[0][g], self.record[2][g]))
 
-    def reach_best_known_solution(self):  # 判断是否达到现有下界值
-        return False
-
     def adaptive_f(self, i, j, k):  # 自适应f
         a = [i, j, k]
         b = [self.pop[2][v] for v in a]
@@ -84,29 +81,18 @@ class De:
         pass
 
     def do_mutation(self, i):  # 变异操作
-        j, k, p, q = np.random.choice(np.delete(np.arange(self.pop_size), i), 4, replace=False)
-        i, j, k = self.adaptive_f(i, j, k)
-        code1 = self.pop[0][i].de_mutation_sequence_hybrid(self.f, self.pop[0][j], self.pop[0][k], self.pop[0][p],
-                                                           self.pop[0][q], self.best[0])
-        self.decode_update(i, code1)
+        pass
 
     def do_crossover(self, i, j):  # 交叉操作
-        self.adaptive_cr(i)
-        code1, code2 = self.pop[0][i].de_crossover_sequence_normal(self.cr, self.pop[0][j])
-        self.decode_update(i, code1)
-        self.decode_update(j, code2)
+        pass
 
     def do_evolution(self):  # 进化框架
         Utils.print("{}Evolution  start{}".format("=" * 48, "=" * 48), fore=Utils.fore().LIGHTYELLOW_EX)
         self.clear()
         self.do_init()
         for g in range(1, self.max_generation + 1):
-            if self.reach_best_known_solution():
-                break
             self.record[0].append(time.perf_counter())
             for i in range(self.pop_size):
-                if self.reach_best_known_solution():
-                    break
                 self.do_mutation(i)
                 j = np.random.choice(np.delete(np.arange(self.pop_size), i), 1, replace=False)[0]
                 self.do_crossover(i, j)
@@ -139,37 +125,15 @@ class DeNumericOptimization(De):
         self.record[1].append(time.perf_counter())
         self.show_generation(0)
 
+    def do_mutation(self, i):
+        j, k, p, q = np.random.choice(np.delete(np.arange(self.pop_size), i), 4, replace=False)
+        i, j, k = self.adaptive_f(i, j, k)
+        code1 = self.pop[0][i].de_mutation(self.f, self.pop[0][j], self.pop[0][k], self.pop[0][p], self.pop[0][q],
+                                           self.best[0])
+        self.decode_update(i, code1)
 
-class DeShopSchedule(DeNumericOptimization):
-    def __init__(self, pop_size, max_generation, f, cr, problem, func, max_or_min=0):
-        DeNumericOptimization.__init__(self, pop_size, max_generation, f, cr, problem, func, max_or_min)
-
-    def reach_best_known_solution(self):
-        if self.problem.best_known is not None and self.best[1] <= self.problem.best_known:
-            return True
-        return False
-
-
-class DeShopScheduleWorker(DeShopSchedule):
-    def __init__(self, pop_size, max_generation, f, cr, problem, func, max_or_min=0):
-        DeShopSchedule.__init__(self, pop_size, max_generation, f, cr, problem, func, max_or_min)
-
-    def decode_update(self, i, code):
-        info = self.problem.decode_worker(self.func, code)
-        self.update_individual(i, info.obj, info)
-
-    def do_init(self, pop=None):
-        self.record[0].append(time.perf_counter())
-        for i in range(self.pop_size):
-            if pop is None:
-                code = self.problem.code(self.problem.low, self.problem.high, self.problem.dtype)
-            else:
-                code = pop[0][i].code
-            info = self.problem.decode_worker(self.func, code)
-            fit = Utils.calculate_fitness(self.max_or_min, info.obj)
-            self.pop[0].append(info)
-            self.pop[1].append(info.obj)
-            self.pop[2].append(fit)
-        self.init_best()
-        self.record[1].append(time.perf_counter())
-        self.show_generation(0)
+    def do_crossover(self, i, j):
+        self.adaptive_cr(i)
+        code1, code2 = self.pop[0][i].de_crossover(self.cr, self.pop[0][j])
+        self.decode_update(i, code1)
+        self.decode_update(j, code2)

@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import numpy as np
+
 from src import *
 
 
@@ -20,20 +20,6 @@ max_or_min = 1
 my_problem = Tsp()
 for i in range(n):
     my_problem.add_city(city[i][1], city[i][2])
-# Example Test
-# code_a = np.array([1, 3, 2, 0, 4, 5], dtype=int)
-# code_b = np.array([3, 1, 4, 0, 5, 2], dtype=int)
-# code_c = my_problem.code_heuristic(a=4)
-# info_a = my_problem.decode_ga(distance, code_a)
-# info_b = my_problem.decode_ga(distance, code_b)
-# info_c = my_problem.decode_ga(distance, code_c)
-# res_a, res_b = info_a.ga_crossover_heuristic_tsp(info_b, c=4)
-# print(code_a, "# parent 1")
-# print(code_b, "# parent 2")
-# print(code_c, "# heuristic code --> c4")
-# print(res_a, "# child 1")
-# print(res_b, "# child 2")
-# # Ga parameter
 pop_size = 50
 max_generation = 500
 rc, rm = 0.85, 0.15

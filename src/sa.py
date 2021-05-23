@@ -61,9 +61,6 @@ class Sa:
         Utils.print("Generation: {:>4}, t: {:.4f}, runtime: {:.4f}, objective: {:>.4f}".format(
             g, self.t, self.record[1][g] - self.record[0][g], self.record[2][g]))
 
-    def reach_best_known_solution(self):  # 判断是否达到现有下界值
-        return False
-
     def do_init(self):  # 定义初始化操作
         pass
 
@@ -71,8 +68,7 @@ class Sa:
         pass
 
     def do_update_individual(self, i):
-        code = self.pop[0][i].sa_classic(self.t)
-        self.decode_update(i, code)
+        pass
 
     def do_evolution(self):  # 进化框架
         Utils.print("{}Evolution  start{}".format("=" * 48, "=" * 48), fore=Utils.fore().LIGHTYELLOW_EX)
@@ -80,12 +76,8 @@ class Sa:
         self.do_init()
         g = 1
         while self.t > self.t_min:
-            if self.reach_best_known_solution():
-                break
             self.record[0].append(time.perf_counter())
             for i in range(self.pop_size):
-                if self.reach_best_known_solution():
-                    break
                 self.do_update_individual(i)
             self.record[1].append(time.perf_counter())
             self.update_t()
@@ -118,37 +110,6 @@ class SaNumericOptimization(Sa):
         self.record[1].append(time.perf_counter())
         self.show_generation(0)
 
-
-class SaShopSchedule(SaNumericOptimization):
-    def __init__(self, pop_size, t0, t_min, alpha, problem, func, max_or_min=0):
-        SaNumericOptimization.__init__(self, pop_size, t0, t_min, alpha, problem, func, max_or_min)
-
-    def reach_best_known_solution(self):
-        if self.problem.best_known is not None and self.best[1] <= self.problem.best_known:
-            return True
-        return False
-
-
-class SaShopScheduleWorker(SaShopSchedule):
-    def __init__(self, pop_size, t0, t_min, alpha, problem, func, max_or_min=0):
-        SaShopSchedule.__init__(self, pop_size, t0, t_min, alpha, problem, func, max_or_min)
-
-    def decode_update(self, i, code):
-        info = self.problem.decode_worker(self.func, code)
-        self.update_individual(i, info.obj, info)
-
-    def do_init(self, pop=None):
-        self.record[0].append(time.perf_counter())
-        for i in range(self.pop_size):
-            if pop is None:
-                code = self.problem.code(self.problem.low, self.problem.high, self.problem.dtype)
-            else:
-                code = pop[0][i].code
-            info = self.problem.decode_worker(self.func, code)
-            fit = Utils.calculate_fitness(self.max_or_min, info.obj)
-            self.pop[0].append(info)
-            self.pop[1].append(info.obj)
-            self.pop[2].append(fit)
-        self.init_best()
-        self.record[1].append(time.perf_counter())
-        self.show_generation(0)
+    def do_update_individual(self, i):
+        code = self.pop[0][i].sa_classic(self.t)
+        self.decode_update(i, code)
