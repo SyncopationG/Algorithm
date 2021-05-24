@@ -1,9 +1,12 @@
-from .code import Code
-from .de import DeNumericOptimization
-from .ga import GaTsp
-from .jaya import JayaNumericOptimization
-from .problem import NumericOptimization, Tsp
-from .pso import PsoNumericOptimization
-from .sa import SaNumericOptimization
-from .utils import Utils
+from .algorithm import DeNumericOptimization
+from .algorithm import GaTsp
+from .algorithm import JayaNumericOptimization
+from .algorithm import PsoNumericOptimization
+from .algorithm import SaNumericOptimization
 from .data import tsp_benchmark
+from .problem import NumericOptimization
+from .problem import Tsp
+from .utils import Utils
+from .define import Name, Operator
+
+Utils.make_dir("./Result")

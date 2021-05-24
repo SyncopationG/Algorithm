@@ -61,12 +61,13 @@ high = [10, ]
 dtype = [float, ]
 max_or_min = 0
 my_problem = NumericOptimization(low, high, dtype)
-# Pso parameter
-pop_size = 50
-max_generation = 500
+# 参数
+pop_size = 20
+max_generation = 100
 c1, c2, w = 2, 2, 0.6
+my_problem.operator[Name.pso] = Operator.pso_classic
 a = PsoNumericOptimization(pop_size, max_generation, c1, c2, w, my_problem, func, max_or_min=max_or_min)
 a.do_evolution()
-Utils.make_dir("./res")
-Utils.save_record_to_csv("./res/ObjTrace", a.record)
-print(a.best[0].code[0], a.best[1])
+a.best[0].print()
+a.best[0].save("./Result/CodeObj")
+Utils.save_record_to_csv("./Result/ObjTrace", a.record)

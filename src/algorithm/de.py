@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from .utils import Utils
+from ..utils import Utils
 
 deepcopy = copy.deepcopy
 
@@ -28,15 +28,15 @@ class De:
         self.pop = [[], [], []]
         self.record = [[], [], [], []]
 
-    def update_individual(self, i, obj_new, info_new):  # 更新个体
-        fit_new = Utils.calculate_fitness(self.max_or_min, obj_new)
-        if Utils.update_accept_equal(self.max_or_min, self.pop[1][i], obj_new):
+    def update_individual(self, i, info_new):  # 更新个体
+        fit_new = Utils.calculate_fitness(self.max_or_min, info_new.obj)
+        if Utils.update_accept_equal(self.max_or_min, self.pop[1][i], info_new.obj):
             self.pop[0][i] = info_new
-            self.pop[1][i] = obj_new
+            self.pop[1][i] = info_new.obj
             self.pop[2][i] = fit_new
-        if Utils.update(self.max_or_min, self.best[1], obj_new):  # 更新最优个体
+        if Utils.update(self.max_or_min, self.best[1], info_new.obj):  # 更新最优个体
             self.best[0] = info_new
-            self.best[1] = obj_new
+            self.best[1] = info_new.obj
             self.best[2] = fit_new
 
     def init_best(self):  # 初始化最优个体
@@ -105,9 +105,8 @@ class DeNumericOptimization(De):
     def __init__(self, pop_size, max_generation, f, cr, problem, func, max_or_min=0):
         De.__init__(self, pop_size, max_generation, f, cr, problem, func, max_or_min)
 
-    def decode_update(self, i, code):
-        info = self.problem.decode(self.func, code)
-        self.update_individual(i, info.obj, info)
+    def decode(self, code):
+        return self.problem.decode(self.func, code)
 
     def do_init(self, pop=None):
         self.record[0].append(time.perf_counter())
@@ -116,7 +115,7 @@ class DeNumericOptimization(De):
                 code = self.problem.code(self.problem.low, self.problem.high, self.problem.dtype)
             else:
                 code = pop[0][i].code
-            info = self.problem.decode(self.func, code)
+            info = self.decode(code)
             fit = Utils.calculate_fitness(self.max_or_min, info.obj)
             self.pop[0].append(info)
             self.pop[1].append(info.obj)
@@ -130,10 +129,10 @@ class DeNumericOptimization(De):
         i, j, k = self.adaptive_f(i, j, k)
         code1 = self.pop[0][i].de_mutation(self.f, self.pop[0][j], self.pop[0][k], self.pop[0][p], self.pop[0][q],
                                            self.best[0])
-        self.decode_update(i, code1)
+        self.update_individual(i, self.decode(code1))
 
     def do_crossover(self, i, j):
         self.adaptive_cr(i)
         code1, code2 = self.pop[0][i].de_crossover(self.cr, self.pop[0][j])
-        self.decode_update(i, code1)
-        self.decode_update(j, code2)
+        self.update_individual(i, self.decode(code1))
+        self.update_individual(j, self.decode(code2))

@@ -60,12 +60,13 @@ low = [-10, ]
 high = [10, ]
 dtype = [float, ]
 max_or_min = 0
-problem = NumericOptimization(low, high, dtype)
-# Sa parameter
-pop_size = 50
+my_problem = NumericOptimization(low, high, dtype)
+# 参数
+pop_size = 20
 t0, t_min, alpha = 1000, 0.001, 0.95
-a = SaNumericOptimization(pop_size, t0, t_min, alpha, problem, func, max_or_min=max_or_min)
+my_problem.operator[Name.sa] = Operator.sa_classic
+a = SaNumericOptimization(pop_size, t0, t_min, alpha, my_problem, func, max_or_min=max_or_min)
 a.do_evolution()
-Utils.make_dir("./res")
-Utils.save_record_to_csv("./res/ObjTrace", a.record)
-print(a.best[0].code, a.best[1])
+a.best[0].print()
+a.best[0].save("./Result/CodeObj")
+Utils.save_record_to_csv("./Result/ObjTrace", a.record)

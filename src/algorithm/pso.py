@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from .utils import Utils
+from ..utils import Utils
 
 
 class Pso:
@@ -26,9 +26,6 @@ class Pso:
         self.pop_best = [[], []]  # (info, obj)
         self.record = [[], [], [], []]  # (time_start, time_end, mean_obj, best_obj)
 
-    def reach_best_known_solution(self):
-        return False
-
     def init_best(self):
         if self.max_or_min == 0:
             self.best[1] = max(self.pop[1])
@@ -36,6 +33,15 @@ class Pso:
             self.best[1] = min(self.pop[1])
         index = self.pop[1].index(self.best[1])
         self.best[0] = self.pop[0][index]
+
+    def update(self, i, info):
+        if Utils.update(self.max_or_min, self.pop_best[1][i], info.obj):
+            self.pop_best[0][i] = info
+            self.pop_best[1][i] = info.obj
+        if Utils.update(self.max_or_min, self.best[1], info.obj):
+            self.best[0] = info
+            self.best[1] = info.obj
+        self.pop[0][i], self.pop[1][i] = info, info.obj
 
     def show_generation(self, g):
         self.record[2].append(np.mean(self.pop_best[1]))
@@ -54,12 +60,8 @@ class Pso:
         self.clear()
         self.do_init(pop)
         for g in range(1, self.max_generation + 1):
-            if self.reach_best_known_solution():
-                break
             self.record[0].append(time.perf_counter())
             for i in range(self.pop_size):
-                if self.reach_best_known_solution():
-                    break
                 self.do_update_individual(i)
             self.record[1].append(time.perf_counter())
             self.show_generation(g)
@@ -69,6 +71,9 @@ class Pso:
 class PsoNumericOptimization(Pso):
     def __init__(self, pop_size, max_generation, c1, c2, w, problem, func, max_or_min=0):
         Pso.__init__(self, pop_size, max_generation, c1, c2, w, problem, func, max_or_min)
+
+    def decode(self, code):
+        return self.problem.decode_pso(self.func, code)
 
     def do_init(self, pop=None):
         self.record[0].append(time.perf_counter())
@@ -87,12 +92,5 @@ class PsoNumericOptimization(Pso):
         self.show_generation(0)
 
     def do_update_individual(self, i):
-        code = self.pop[0][i].pso_classic(self.c1, self.c2, self.w, self.pop_best[0][i], self.best[0])
-        info = self.problem.decode_pso(self.func, code)
-        if Utils.update(self.max_or_min, self.pop_best[1][i], info.obj):
-            self.pop_best[0][i] = info
-            self.pop_best[1][i] = info.obj
-        if Utils.update(self.max_or_min, self.best[1], info.obj):
-            self.best[0] = info
-            self.best[1] = info.obj
-        self.pop[0][i], self.pop[1][i] = info, info.obj
+        code = self.pop[0][i].pso_update(self.c1, self.c2, self.w, self.pop_best[0][i], self.best[0])
+        self.update(i, self.decode(code))

@@ -1,6 +1,5 @@
 import os
 
-import chardet
 import numpy as np
 from colorama import init, Fore
 
@@ -8,6 +7,10 @@ init(autoreset=True)
 
 
 class Utils:
+    @staticmethod
+    def similarity(a, b):
+        return sum([1 if i == j else 0 for i, j in zip(a, b)]) / len(a)
+
     @staticmethod
     def update(max_or_min, obj_old, obj_new):
         return True if (max_or_min == 0 and obj_new > obj_old) or (max_or_min == 1 and obj_new < obj_old) else False
@@ -19,6 +22,10 @@ class Utils:
     @staticmethod
     def calculate_fitness(max_or_min, obj):
         return obj if max_or_min == 0 else 1 / (1 + obj)
+
+    @staticmethod
+    def len_tabu(n):
+        return 10 * n
 
     @staticmethod
     def fore():

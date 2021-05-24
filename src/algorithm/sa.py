@@ -3,7 +3,7 @@ import time
 
 import numpy as np
 
-from .utils import Utils
+from ..utils import Utils
 
 deepcopy = copy.deepcopy
 
@@ -35,15 +35,15 @@ class Sa:
         p = np.exp(-np.abs((fit_new - self.pop[2][i])) / self.t)
         return True if np.random.random() < p else False
 
-    def update_individual(self, i, obj_new, info_new):  # 更新个体
-        fit_new = Utils.calculate_fitness(self.max_or_min, obj_new)
-        if Utils.update(self.max_or_min, self.pop[1][i], obj_new) or self.update_info(i, fit_new):
+    def update_individual(self, i, info_new):  # 更新个体
+        fit_new = Utils.calculate_fitness(self.max_or_min, info_new.obj)
+        if Utils.update(self.max_or_min, self.pop[1][i], info_new.obj) or self.update_info(i, fit_new):
             self.pop[0][i] = info_new
-            self.pop[1][i] = obj_new
+            self.pop[1][i] = info_new.obj
             self.pop[2][i] = fit_new
-        if Utils.update(self.max_or_min, self.best[1], obj_new):  # 更新最优个体
+        if Utils.update(self.max_or_min, self.best[1], info_new.obj):  # 更新最优个体
             self.best[0] = info_new
-            self.best[1] = obj_new
+            self.best[1] = info_new.obj
             self.best[2] = fit_new
 
     def init_best(self):  # 初始化最优个体
@@ -90,9 +90,8 @@ class SaNumericOptimization(Sa):
     def __init__(self, pop_size, t0, t_min, alpha, problem, func, max_or_min=0):
         Sa.__init__(self, pop_size, t0, t_min, alpha, problem, func, max_or_min)
 
-    def decode_update(self, i, code):
-        info = self.problem.decode(self.func, code)
-        self.update_individual(i, info.obj, info)
+    def decode(self, code):
+        return self.problem.decode(self.func, code)
 
     def do_init(self, pop=None):
         self.record[0].append(time.perf_counter())
@@ -101,7 +100,7 @@ class SaNumericOptimization(Sa):
                 code = self.problem.code(self.problem.low, self.problem.high, self.problem.dtype)
             else:
                 code = pop[0][i].code
-            info = self.problem.decode(self.func, code)
+            info = self.decode(code)
             fit = Utils.calculate_fitness(self.max_or_min, info.obj)
             self.pop[0].append(info)
             self.pop[1].append(info.obj)
@@ -111,5 +110,5 @@ class SaNumericOptimization(Sa):
         self.show_generation(0)
 
     def do_update_individual(self, i):
-        code = self.pop[0][i].sa_classic(self.t)
-        self.decode_update(i, code)
+        code = self.pop[0][i].sa_update(self.t)
+        self.update_individual(i, self.decode(code))

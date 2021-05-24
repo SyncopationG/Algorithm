@@ -14,20 +14,25 @@ n, city = Utils.string2data_tsp_cn(tsp_benchmark.instance[instance], dtype=float
 # instance = "example"
 # instance = "eil51"
 # n, city = Utils.string2data_tsp(tsp_benchmark.instance[instance], dtype=float)
-# 参数
-func = distance
 max_or_min = 1
 my_problem = Tsp()
 for i in range(n):
     my_problem.add_city(city[i][1], city[i][2])
-pop_size = 50
-max_generation = 500
+# 参数
+func = distance
+pop_size = 20
+max_generation = 100
 rc, rm = 0.85, 0.15
+my_problem.operator[Name.ga_x] = Operator.ga_x_tsp_h
+my_problem.operator[Name.ga_m] = Operator.ga_m_tpe
+my_problem.operator[Name.ga_s] = Operator.ga_s_roulette
+my_problem.operator[Name.ts] = True
+my_problem.operator[Name.do] = True
 a = GaTsp(pop_size, max_generation, rc, rm, my_problem, func, max_or_min=max_or_min)
-plt.figure()
 a.do_evolution()
+plt.figure()
 a.tsp_figure()
-plt.savefig("tsp-%s" % instance)
-Utils.make_dir("./res")
-Utils.save_record_to_csv("./res/ObjTrace", a.record)
-print(a.best[0].code + 1, a.best[1])
+plt.savefig("./Result/tsp-%s" % instance)
+a.best[0].print()
+a.best[0].save("./Result/CodeObj")
+Utils.save_record_to_csv("./Result/ObjTrace", a.record)

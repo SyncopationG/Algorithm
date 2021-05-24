@@ -1,6 +1,8 @@
 import copy
 
 import numpy as np
+from .define import Name, Operator
+from .utils import Utils
 
 deepcopy = copy.deepcopy
 
@@ -10,6 +12,19 @@ class Info:
         self.problem = deepcopy(problem)
         self.code = code
         self.obj = obj
+
+    def print(self):
+        Utils.print("%s %s" % (self.code, self.obj), fore=Utils.fore().LIGHTYELLOW_EX)
+
+    def save(self, file):
+        if not file.endswith(".txt"):
+            file += ".txt"
+        a = "%s %s\n" % (self.code, self.obj)
+        with open(file, "w", encoding="utf-8") as f:
+            for i, j in enumerate(a):
+                f.writelines(j)
+                if (i + 1) % 100 == 0:
+                    f.writelines("\n")
 
     def repair(self, code):
         for i, (j, k) in enumerate(zip(code, self.problem.dtype)):
@@ -21,14 +36,13 @@ class Info:
         return code
 
     def de_mutation(self, f, info2, info3, info4, info5, info_best):
-        a = np.random.random()
-        if a < 0.2:
+        if self.problem.operator[Name.de] in [Operator.default, Operator.de_rand1]:
             return self.de_mutation_sequence_rand1(f, info2, info3)
-        elif a < 0.4:
+        elif self.problem.operator[Name.de] == Operator.de_best1:
             return self.de_mutation_sequence_best1(f, info2, info_best)
-        elif a < 0.6:
+        elif self.problem.operator[Name.de] == Operator.de_c2best1:
             return self.de_mutation_sequence_c2best1(f, info2, info_best)
-        elif a < 0.8:
+        elif self.problem.operator[Name.de] == Operator.de_best2:
             return self.de_mutation_sequence_best2(f, info2, info3, info4, info_best)
         return self.de_mutation_sequence_rand2(f, info2, info3, info4, info5)
 
@@ -79,8 +93,10 @@ class Info:
         new = code1 + f * (code2 - code3) + f * (code4 - code5)
         return self.repair(new)
 
-    def jaya_update(self):
-        pass
+    def jaya_update(self, best, worst, rand):
+        if self.problem.operator[Name.jaya] in [Operator.default, Operator.jaya_classic]:
+            return self.jaya_classic(best, worst)
+        return self.jaya_rand(best, worst, rand)
 
     def jaya_classic(self, best, worst):
         a, b = np.random.random(2)
@@ -94,8 +110,10 @@ class Info:
         new = self.code + a * (best.code - code) - b * (worst.code - code) + c * (rand.code - code)
         return self.repair(new)
 
-    def pso_update(self):
-        pass
+    def pso_update(self, c1, c2, w, p_best, g_best):
+        if self.problem.operator[Name.pso] in [Operator.default, Operator.pso_classic]:
+            return self.pso_classic(c1, c2, w, p_best, g_best)
+        return self.pso_classic(c1, c2, w, p_best, g_best)
 
     def pso_classic(self, c1, c2, w, p_best, g_best):
         a, b = np.random.random(2)
@@ -103,20 +121,30 @@ class Info:
         d = self.code[1] + c
         return self.repair(c), self.repair(d)
 
-    def sa_update(self):
-        pass
+    def sa_update(self, t):
+        if self.problem.operator[Name.sa] in [Operator.default, Operator.sa_classic]:
+            return self.sa_classic(t)
+        return self.sa_classic(t)
 
     def sa_classic(self, t):
-        a = -self.problem.var_range + 2 * self.problem.var_range * np.random.random(self.problem.n_dim)
+        a = -self.problem.var_range + 2 * self.problem.var_range * np.random.random(self.problem.n)
         b = a / np.sqrt(sum([i ** 2 for i in a]))
         new = self.code + b * t
         return self.repair(new)
 
-    def ga_crossover(self):
-        pass
+    def ga_crossover(self, info):
+        if self.problem.operator[Name.ga_x] in [Operator.default, Operator.ga_x_pmx]:
+            return self.ga_crossover_pmx(info)
+        elif self.problem.operator[Name.ga_x] == Operator.ga_x_ox:
+            return self.ga_crossover_ox(info)
+        return self.ga_crossover_heuristic_tsp(info)
 
     def ga_mutation(self):
-        pass
+        if self.problem.operator[Name.ga_m] in [Operator.default, Operator.ga_m_tpe]:
+            return self.ga_mutation_tpe()
+        elif self.problem.operator[Name.ga_m] == Operator.ga_m_insert:
+            return self.ga_mutation_insert()
+        return self.ga_mutation_sr()
 
     def ga_crossover_pmx(self, info):
         code1 = deepcopy(self.code)
@@ -179,10 +207,10 @@ class Info:
         code1[left_b_a], code2[left_b_a] = change1, change2
         return code1, code2
 
-    def ga_crossover_heuristic_tsp(self, info, c=None):
+    def ga_crossover_heuristic_tsp(self, info):
         code1, code1c = deepcopy(self.code), deepcopy(self.code)
         code2, code2c = deepcopy(info.code), deepcopy(info.code)
-        a = b = np.random.randint(0, self.problem.n, 1)[0] if c is None else c
+        a = b = np.random.randint(0, self.problem.n, 1)[0]
         res1, res2 = np.array([a, ], dtype=int), np.array([a, ], dtype=int)
         while res1.shape[0] < self.problem.n:  # child1
             index1_a, index2_a = np.argwhere(code1 == a)[0, 0], np.argwhere(code2 == a)[0, 0]
@@ -227,3 +255,39 @@ class Info:
         c = range(a, b + 1)
         code[c] = code[c[::-1]]
         return code
+
+    @staticmethod
+    def do_tabu_search(code, i, j, w):
+        if i > j:
+            i, j = j, i
+        if w == 0:
+            obj = np.delete(code, j)
+            code = np.insert(obj, i, code[j])
+        elif w == 1:
+            obj = np.delete(code, i)
+            code = np.insert(obj, j - 1, code[i])
+            code[j], code[j - 1] = code[j - 1], code[j]
+        else:
+            code[i], code[j] = code[j], code[i]
+        return code
+
+    def ts_permutation(self, tabu_list, max_tabu):
+        code = deepcopy(self.code)
+        n_try = 0
+        while n_try < max_tabu:
+            n_try += 1
+            try:
+                i, j = np.random.choice(self.problem.n, 2, replace=False)
+                w = np.random.choice(range(3), 1, replace=False)[0]
+                tabu = {"way-%s" % w, i, j}
+                if tabu not in tabu_list:
+                    tabu_list.append(tabu)
+                    code = self.do_tabu_search(code, i, j, w)
+                    break
+            except ValueError:
+                pass
+        return code
+
+    def dislocation_operator(self, direction=0):
+        return np.hstack([self.code[1:], self.code[0]]) if direction == 0 else np.hstack(
+            [self.code[-1], self.code[:-1]])

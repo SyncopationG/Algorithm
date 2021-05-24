@@ -61,12 +61,13 @@ high = [3, 3]
 dtype = [float, float]
 max_or_min = 1
 my_problem = NumericOptimization(low, high, dtype)
-# De parameter
-pop_size = 50
-max_generation = 500
+# 参数
+pop_size = 20
+max_generation = 100
 f, cr = 0.5, 0.5
+my_problem.operator[Name.de] = Operator.de_best2
 a = DeNumericOptimization(pop_size, max_generation, f, cr, my_problem, func, max_or_min=max_or_min)
 a.do_evolution()
-Utils.make_dir("./res")
-Utils.save_record_to_csv("./res/ObjTrace", a.record)
-print(a.best[0].code, a.best[1])
+a.best[0].print()
+a.best[0].save("./Result/CodeObj")
+Utils.save_record_to_csv("./Result/ObjTrace", a.record)

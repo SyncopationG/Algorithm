@@ -1,7 +1,9 @@
 import numpy as np
 
-from .code import Code
 from .info import Info
+from .resource import City
+from .resource import Code
+from .define import Name, Operator
 
 
 class Common:
@@ -9,8 +11,12 @@ class Common:
         self.low = low
         self.high = high
         self.dtype = dtype
+        a = [Name.de, Name.jaya, Name.pso, Name.sa, Name.ga_x, Name.ga_m, Name.ga_s]
+        self.operator = {Name.ts: False, Name.do: False}
+        for k in a:
+            self.operator[k] = Operator.default
         try:
-            self.n_dim = len(low)
+            self.n = len(low)
             self.var_range = np.array([i - j for i, j in zip(high, low)])
         except TypeError:
             pass
@@ -25,13 +31,6 @@ class NumericOptimization(Code, Common):
 
     def decode_pso(self, func, code):
         return Info(self, code, func(code[0]))
-
-
-class City:
-    def __init__(self, x, y, name=None):
-        self.x = x
-        self.y = y
-        self.name = name
 
 
 class Tsp(Code, Common):
