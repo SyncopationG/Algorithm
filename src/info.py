@@ -289,5 +289,4 @@ class Info:
         return code
 
     def dislocation_operator(self, direction=0):
-        return np.hstack([self.code[1:], self.code[0]]) if direction == 0 else np.hstack(
-            [self.code[-1], self.code[:-1]])
+        return np.hstack([self.code[1:], self.code[0]]) if direction == 0 else np.hstack([self.code[-1], self.code[:-1]])
