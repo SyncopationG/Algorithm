@@ -1,3 +1,7 @@
 # Algorithm
- Differential evolution; Particle swarm optimization; Simulated annealing; Genetic algorithm; Jaya  
+Alforithms: Differential evolution; Particle swarm optimization; Simulated annealing; Genetic algorithm; Jaya  
+Problems: Numeric optimization; TSP  
+
+
+
 
