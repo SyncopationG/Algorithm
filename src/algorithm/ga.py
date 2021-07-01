@@ -1,12 +1,9 @@
-import copy
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 from ..define import Name, Operator
 from ..utils import Utils
-
-deepcopy = copy.deepcopy
 
 
 class Ga:
@@ -47,7 +44,6 @@ class Ga:
 
     def append_individual(self, i, info):
         fit = Utils.calculate_fitness(self.max_or_min, info.obj)
-        self.update_best(i, info, fit)
         self.pop[0].append(info)
         self.pop[1].append(info.obj)
         self.pop[2].append(fit)
@@ -55,7 +51,6 @@ class Ga:
 
     def replace_individual(self, i, info):
         fit = Utils.calculate_fitness(self.max_or_min, info.obj)
-        self.update_best(i, info, fit)
         if Utils.update(self.max_or_min, self.pop[1][i], info.obj):
             self.pop[0][i] = info
             self.pop[1][i] = info.obj
@@ -72,12 +67,8 @@ class Ga:
         self.best[0] = self.pop[0][index]
         self.best[3] = self.tabu[index]
 
-    def update_best(self, i, info, fit):
-        if Utils.update(self.max_or_min, self.best[1], info.obj):
-            self.best[0] = info
-            self.best[1] = info.obj
-            self.best[2] = fit
-            self.best[3] = self.tabu[i]
+    def update_best(self):
+        self.init_best()
 
     def show_generation(self, g):
         self.record[2].append(self.best[1])
@@ -94,8 +85,8 @@ class Ga:
         b = np.array([])
         for i in range(a.shape[0]):
             b = np.append(b, sum(a[:i + 1]))
-        pop = deepcopy(self.pop)
-        tabu = deepcopy(self.tabu)
+        pop = self.pop
+        tabu = self.tabu
         self.pop = [[], [], []]
         self.tabu = [[] for _ in range(self.pop_size)]
         for i in range(self.pop_size):
@@ -106,8 +97,8 @@ class Ga:
             self.tabu[i] = tabu[j]
 
     def selection_champion2(self):
-        pop = deepcopy(self.pop)
-        tabu = deepcopy(self.tabu)
+        pop = self.pop
+        tabu = self.tabu
         self.pop = [[], [], []]
         self.tabu = [[] for _ in range(self.pop_size)]
         for i in range(self.pop_size):
@@ -119,6 +110,7 @@ class Ga:
             self.tabu[i] = tabu[j]
 
     def do_selection(self):
+        self.update_best()
         if self.problem.operator[Name.ga_s] in [Operator.default, Operator.ga_s_roulette]:
             self.selection_roulette()
         else:

@@ -1,11 +1,8 @@
-import copy
 import time
 
 import numpy as np
 
 from ..utils import Utils
-
-deepcopy = copy.deepcopy
 
 
 class De:
