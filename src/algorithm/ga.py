@@ -1,7 +1,9 @@
+import copy
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from ..define import Name, Operator
 from ..utils import Utils
 
@@ -21,6 +23,11 @@ class Ga:
         self.record = [[], [], [], [], [], []]
         self.max_tabu = Utils.len_tabu(self.problem.n)
         self.tabu = [[] for _ in range(self.pop_size)]
+        # for selection
+        self.pop_copy = [[], [], []]
+        self.tabu_copy = [[] for _ in range(self.pop_size)]
+        self.pop_selection_pool = [[], [], []]
+        self.pop_selection_tabu_pool = []
 
     def clear(self):
         self.best = [None, None, None, []]
@@ -42,14 +49,15 @@ class Ga:
         except AttributeError:
             pass
 
-    def append_individual(self, i, info):
-        fit = Utils.calculate_fitness(self.max_or_min, info.obj)
-        self.pop[0].append(info)
-        self.pop[1].append(info.obj)
-        self.pop[2].append(fit)
-        self.tabu.append([])
-
     def replace_individual(self, i, info):
+        fit = Utils.calculate_fitness(self.max_or_min, info.obj)
+        self.pop[0][i] = info
+        self.pop[1][i] = info.obj
+        self.pop[2][i] = fit
+        self.tabu[i] = []
+        self.update_best(i)
+
+    def replace_individual_better(self, i, info):
         fit = Utils.calculate_fitness(self.max_or_min, info.obj)
         if Utils.update(self.max_or_min, self.pop[1][i], info.obj):
             self.pop[0][i] = info
@@ -67,8 +75,19 @@ class Ga:
         self.best[0] = self.pop[0][index]
         self.best[3] = self.tabu[index]
 
-    def update_best(self):
-        self.init_best()
+    def update_best(self, i):
+        val = self.pop[1][i]
+        best_obj = self.best[1]
+        flag = False
+        if self.max_or_min == 0 and val > best_obj:
+            flag = True
+        elif self.max_or_min == 1 and val < best_obj:
+            flag = True
+        if flag:
+            self.best[2] = self.pop[2][i]
+            self.best[1] = self.pop[1][i]
+            self.best[0] = self.pop[0][i]
+            self.best[3] = self.tabu[i]
 
     def show_generation(self, g):
         self.record[2].append(self.best[1])
@@ -81,12 +100,12 @@ class Ga:
                 self.record[2][g]))
 
     def selection_roulette(self):
-        a = np.array(self.pop[2]) / sum(self.pop[2])
+        a = np.array(self.pop_selection_pool[2]) / sum(self.pop_selection_pool[2])
         b = np.array([])
         for i in range(a.shape[0]):
             b = np.append(b, sum(a[:i + 1]))
-        pop = self.pop
-        tabu = self.tabu
+        pop = self.pop_selection_pool
+        tabu = self.pop_selection_tabu_pool
         self.pop = [[], [], []]
         self.tabu = [[] for _ in range(self.pop_size)]
         for i in range(self.pop_size):
@@ -97,8 +116,8 @@ class Ga:
             self.tabu[i] = tabu[j]
 
     def selection_champion2(self):
-        pop = self.pop
-        tabu = self.tabu
+        pop = self.pop_selection_pool
+        tabu = self.pop_selection_tabu_pool
         self.pop = [[], [], []]
         self.tabu = [[] for _ in range(self.pop_size)]
         for i in range(self.pop_size):
@@ -109,16 +128,25 @@ class Ga:
             self.pop[2].append(pop[2][j])
             self.tabu[i] = tabu[j]
 
-    def do_selection(self):
-        self.update_best()
-        if self.problem.operator[Name.ga_s] in [Operator.default, Operator.ga_s_roulette]:
-            self.selection_roulette()
-        else:
-            self.selection_champion2()
+    def save_best(self):
         self.pop[0][0] = self.best[0]
         self.pop[1][0] = self.best[1]
         self.pop[2][0] = self.best[2]
         self.tabu[0] = self.best[3]
+
+    def do_selection(self):
+        for i in range(3):
+            self.pop_selection_pool[i].extend(self.pop[i])
+            self.pop_selection_pool[i].extend(self.pop_copy[i])
+        self.pop_selection_tabu_pool.extend(self.tabu)
+        self.pop_selection_tabu_pool.extend(self.tabu_copy)
+        if self.problem.operator[Name.ga_s] in [Operator.default, Operator.ga_s_roulette]:
+            self.selection_roulette()
+        else:
+            self.selection_champion2()
+        self.save_best()
+        self.pop_selection_pool = [[], [], []]
+        self.pop_selection_tabu_pool = []
 
     def do_init(self):
         pass
@@ -137,14 +165,15 @@ class Ga:
 
     def do_dislocation(self, i, direction=0):
         code1 = self.pop[0][i].dislocation_operator(direction)
-        self.append_individual(i, self.decode(code1))
+        self.replace_individual(i, self.decode(code1))
 
     def do_evolution(self):
         Utils.print("{}Evolution  start{}".format("=" * 48, "=" * 48), fore=Utils.fore().LIGHTYELLOW_EX)
         self.clear()
         self.do_init()
-        self.do_selection()
         for g in range(1, self.max_generation + 1):
+            self.pop_copy = copy.deepcopy(self.pop)
+            self.tabu_copy = copy.deepcopy(self.tabu)
             self.record[0].append(time.perf_counter())
             for i in range(self.pop_size):
                 if self.problem.operator[Name.ts]:
@@ -193,15 +222,15 @@ class GaTsp(Ga):
 
     def do_crossover(self, i, j):
         code1, code2 = self.pop[0][i].ga_crossover(self.pop[0][j])
-        self.append_individual(i, self.decode(code1))
-        self.append_individual(j, self.decode(code2))
+        self.replace_individual(i, self.decode(code1))
+        self.replace_individual(j, self.decode(code2))
 
     def do_mutation(self, i):
         code1 = self.pop[0][i].ga_mutation()
-        self.append_individual(i, self.decode(code1))
+        self.replace_individual(i, self.decode(code1))
 
     def do_tabu(self, i):
         code1 = self.pop[0][i].ts_permutation(self.tabu[i], self.max_tabu)
-        self.replace_individual(i, self.decode(code1))
+        self.replace_individual_better(i, self.decode(code1))
         if len(self.tabu[i]) >= self.max_tabu:
             self.tabu[i] = []
