@@ -183,7 +183,7 @@ class Ga:
                     if self.problem.operator[Name.do] and Utils.similarity(self.pop[0][i].code,
                                                                            self.pop[0][j].code) >= 0.5:
                         self.do_dislocation(i, direction=0)
-                        self.do_dislocation(j, direction=1)
+                        # self.do_dislocation(j, direction=1)
                     else:
                         self.do_crossover(i, j)
                 if np.random.random() < self.rm:
@@ -221,9 +221,10 @@ class GaTsp(Ga):
         self.show_generation(0)
 
     def do_crossover(self, i, j):
-        code1, code2 = self.pop[0][i].ga_crossover(self.pop[0][j])
+        # code1, code2 = self.pop[0][i].ga_crossover(self.pop[0][j])
+        code1, code2 = self.pop[0][i].ga_crossover(self.pop_copy[0][j])
         self.replace_individual(i, self.decode(code1))
-        self.replace_individual(j, self.decode(code2))
+        # self.replace_individual(j, self.decode(code2))
 
     def do_mutation(self, i):
         code1 = self.pop[0][i].ga_mutation()
