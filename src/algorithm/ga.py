@@ -57,6 +57,23 @@ class Ga:
         self.tabu[i] = []
         self.update_best(i)
 
+    def replace_individual_comp(self, i, info, info2):
+        fit = Utils.calculate_fitness(self.max_or_min, info.obj)
+        fit1 = self.pop_copy[2][i]
+        fit2 = Utils.calculate_fitness(self.max_or_min, info2.obj)
+        fit_list = [fit, fit1, fit2]
+        max_fit = max(fit_list)
+        idx_max_fit = fit_list.index(max_fit)
+        if idx_max_fit == 1:
+            info, fit = self.pop_copy[0][i], fit1
+        elif idx_max_fit == 2:
+            info, fit = info2, fit2
+        self.pop[0][i] = info
+        self.pop[1][i] = info.obj
+        self.pop[2][i] = fit
+        self.tabu[i] = []
+        self.update_best(i)
+
     def replace_individual_better(self, i, info):
         fit = Utils.calculate_fitness(self.max_or_min, info.obj)
         if Utils.update(self.max_or_min, self.pop[1][i], info.obj):
@@ -223,7 +240,8 @@ class GaTsp(Ga):
     def do_crossover(self, i, j):
         # code1, code2 = self.pop[0][i].ga_crossover(self.pop[0][j])
         code1, code2 = self.pop[0][i].ga_crossover(self.pop_copy[0][j])
-        self.replace_individual(i, self.decode(code1))
+        # self.replace_individual(i, self.decode(code1))
+        self.replace_individual_comp(i, self.decode(code1), self.decode(code2))
         # self.replace_individual(j, self.decode(code2))
 
     def do_mutation(self, i):

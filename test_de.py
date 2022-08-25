@@ -55,11 +55,11 @@ dtype = [float, ]
 
 # low: 变量的下界; high: 变量的上界; dtype: 变量的数据类型; func: 目标函数
 # max_or_min: 最大化或最小化(最大化: 值取0, 最小化: 值取1)
-func = six_hump_camel_function
-low = [-3, -2]
-high = [3, 3]
-dtype = [float, float]
-max_or_min = 1
+func = fun_a
+low = [-10, ]
+high = [10, ]
+dtype = [float, ]
+max_or_min = 0
 my_problem = NumericOptimization(low, high, dtype)
 # 参数
 pop_size = 20
