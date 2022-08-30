@@ -22,7 +22,7 @@ for i in range(n):
 func = distance
 pop_size = 60
 max_generation = 100
-rc, rm = 0.85, 0.35
+rc, rm = 0.65, 0.05
 my_problem.operator[Name.ga_x] = Operator.ga_x_tsp_h
 my_problem.operator[Name.ga_m] = Operator.ga_m_tpe
 my_problem.operator[Name.ga_s] = Operator.ga_s_roulette
